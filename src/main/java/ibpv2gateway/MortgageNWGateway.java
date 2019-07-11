@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.hyperledger.fabric.sdk.ChaincodeID;
@@ -22,57 +21,49 @@ import org.hyperledger.fabric.sdk.TransactionProposalRequest;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 
-public class IBPV2Gateway {
+public class MortgageNWGateway {
 	
 	public static void main(String argsv[]) throws Exception{
 
-        //System.setProperty("javax.net.ssl.trustStore", "/Users/ganeshram/projects/blockchain/IBPV2JavaClient/IBV2Client/src/main/resources/myLocalTrustStore");
-        //System.setProperty("javax.net.ssl.trustStorePassword","changeit");
+        System.setProperty("javax.net.ssl.trustStore", "/Users/ganeshram/projects/blockchain/IBPV2JavaClient/IBV2Client/src/main/resources/myLocalTrustStore");
+        System.setProperty("javax.net.ssl.trustStorePassword","changeit");
 		
 		IBPV2Gateway gateway = new IBPV2Gateway();
 		
 		NetworkConfig config = NetworkConfig.fromJsonFile(new File(
-				gateway.getClass().getClassLoader().getResource("connection.json").getFile()
+				gateway.getClass().getClassLoader().getResource("MortgageNWConnProfile.json").getFile()
 				));
 		
                 
-		HFCAClient hfcaClient = HFCAClient.createNewInstance(config.getOrganizationInfo("B2S").getCertificateAuthorities().get(0));
+		HFCAClient hfcaClient = HFCAClient.createNewInstance(config.getOrganizationInfo("Consortium").getCertificateAuthorities().get(0));
 		UserContext user = new UserContext();
-		user.setName("application"); 
-		user.setMspId("B2S");
-        user.setEnrollment(hfcaClient.enroll("ganeshram", "ganeshram"));
-        
-         //PEERS
-
-         
+		user.setName("ganeshram"); 
+		user.setMspId("Consortium");
+		user.setEnrollment(hfcaClient.enroll("ganeshram", "ganeshram"));
 		
 		
 		HFClient hfClient = HFClient.createNewInstance();
 	    CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
 	    hfClient.setCryptoSuite(cryptoSuite);
 	    hfClient.setUserContext(user);
-        Properties test = config.getPeerProperties("173.193.75.101:30644");
-        test.toString();
-        Peer peer = hfClient.newPeer("173.193.75.101:30562", "grpcs://173.193.75.101:30562",config.getPeerProperties("173.193.75.101:30562"));
+	   
+        Peer peer = hfClient.newPeer("184.172.250.171:32103", "grpcs://184.172.250.171:32103");
         //Peer peer2 = hfClient.newPeer("173.193.75.101:31910", "grpcs://173.193.75.101:31910");
-        Peer peer3 = hfClient.newPeer("173.193.75.101:30644", "grpcs://173.193.75.101:30644",config.getPeerProperties("173.193.75.101:30644"));
-        Orderer orderer = hfClient.newOrderer("173.193.75.101:31695", "grpcs://173.193.75.101:31695");
-        Channel channel = hfClient.newChannel("newch");
+        //Peer peer3 = hfClient.newPeer("173.193.75.101:30644", "grpcs://173.193.75.101:30644");
+        Orderer orderer = hfClient.newOrderer("184.172.250.171:31828", "grpcs://184.172.250.171:31828");
+        Channel channel = hfClient.newChannel("defaultchannel");
         channel.addPeer(peer);
         //channel.addPeer(peer2);
-        channel.addPeer(peer3);
+        //channel.addPeer(peer3);
         channel.addOrderer(orderer);
         channel.initialize();
-
-       
-
-
-  
+        
+      
         TransactionProposalRequest tpr = hfClient.newTransactionProposalRequest();
         ChaincodeID cid = ChaincodeID.newBuilder().setName("b2spointsbank").build();
         tpr.setChaincodeID(cid);
         tpr.setFcn("createB2Spointsbank");
-        tpr.setArgs(new String[]{"ganeshram12", "{\"points\":\"100\"}"});
+        tpr.setArgs(new String[]{"ganeshram", "{\"points\":\"100\"}"});
         tpr.setProposalWaitTime(5000);
         
         Map<String, byte[]> tm2 = new HashMap<>();
@@ -97,7 +88,7 @@ public class IBPV2Gateway {
             invalid.forEach(response -> {
                 System.out.println(response.getMessage());
             });
-            //throw new RuntimeException("invalid response(s) found");
+            throw new RuntimeException("invalid response(s) found");
         }
         
         channel.sendTransaction(responses).get();
@@ -112,11 +103,10 @@ public class IBPV2Gateway {
         //ChaincodeID cid = ChaincodeID.newBuilder().setName("b2spointsbank").build();
         tpr2.setChaincodeID(cid);
         tpr2.setFcn("readB2Spointsbank");
-        tpr2.setArgs(new String[]{"ganeshram12"});
+        tpr2.setArgs(new String[]{"ganeshram"});
         tpr2.setProposalWaitTime(5000);
 
         Collection<ProposalResponse> responses2 = channel.queryByChaincode(tpr2);
-        
         for(ProposalResponse response : responses2){
             System.out.println("-------------RESPONSE INTROSPECTION-------------");
             System.out.println(response.getPeer().getName());
